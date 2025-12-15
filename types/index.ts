@@ -279,7 +279,8 @@ export interface SchoolAdminDashboard {
   role: string;
   school: {
     id: number;
-    name: string;
+    name: string | null;
+    mobile: string;
     subscription_active: boolean;
     subscription_end: string | null;
     days_until_expiry: number | null;

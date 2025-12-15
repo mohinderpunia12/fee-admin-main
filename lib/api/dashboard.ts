@@ -252,6 +252,7 @@ export const getSchoolAdminDashboard = async (): Promise<SchoolAdminDashboard> =
     school: {
       id: school.id,
       name: school.name,
+      mobile: school.mobile || '',
       subscription_active: school.active && (school.subscription_end ? new Date(school.subscription_end) > new Date() : false),
       subscription_end: school.subscription_end,
       days_until_expiry: daysUntilExpiry,
