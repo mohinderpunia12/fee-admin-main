@@ -9,16 +9,20 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { PageLoader } from "@/components/ui/loading-spinner";
 import { SubscriptionExpiredModal } from "@/components/ui/subscription-expired-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Receipt, TrendingUp, AlertCircle } from "lucide-react";
+import { Receipt, TrendingUp, AlertCircle, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 export default function StudentDashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
 
-  const { data: dashboard, isLoading } = useQuery({
+  const { data: dashboard, isLoading, error: dashboardError, refetch } = useQuery({
     queryKey: ["student-dashboard"],
     queryFn: getStudentDashboard,
     enabled: !authLoading && !!user && user.role === "student",
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   useEffect(() => {
@@ -26,6 +30,26 @@ export default function StudentDashboardPage() {
       router.push("/dashboard");
     }
   }, [user, authLoading, router]);
+
+  // Show error state if query failed
+  if (!authLoading && !isLoading && dashboardError) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+          <Alert variant="destructive" className="max-w-md">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Failed to Load Dashboard</AlertTitle>
+            <AlertDescription className="mt-2">
+              {dashboardError instanceof Error ? dashboardError.message : 'An error occurred while loading your dashboard. Please try again.'}
+            </AlertDescription>
+          </Alert>
+          <Button onClick={() => refetch()} variant="outline">
+            Retry
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (authLoading || isLoading || !dashboard) {
     return (

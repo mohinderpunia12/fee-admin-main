@@ -55,17 +55,44 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session) {
-          try {
-            const userData = await authApi.getUserProfile();
-            setUser(userData);
-          } catch (error) {
-            console.error('Failed to fetch user profile:', error);
-            setUser(null);
+          // Retry logic with exponential backoff
+          let retryCount = 0;
+          const maxRetries = 3;
+          let lastError: any = null;
+
+          while (retryCount < maxRetries) {
+            try {
+              const userData = await authApi.getUserProfile();
+              setUser(userData);
+              setLoading(false);
+              return; // Success, exit retry loop
+            } catch (error) {
+              lastError = error;
+              retryCount++;
+              
+              if (retryCount < maxRetries) {
+                // Exponential backoff: 500ms, 1000ms, 2000ms
+                const delay = 500 * Math.pow(2, retryCount - 1);
+                console.warn(`Failed to fetch user profile (attempt ${retryCount}/${maxRetries}), retrying in ${delay}ms...`, error);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              } else {
+                // All retries exhausted
+                console.error('Failed to fetch user profile after all retries:', lastError);
+                // Only set user to null if it's a permanent error (not auth-related)
+                const errorMessage = lastError instanceof Error ? lastError.message : String(lastError);
+                if (errorMessage.includes('Not authenticated') || errorMessage.includes('User profile not found')) {
+                  setUser(null);
+                }
+                // Keep loading false so UI can render error states
+                setLoading(false);
+              }
+            }
           }
+        } else {
+          setLoading(false);
         }
       } catch (error) {
         console.error('Auth initialization error:', error);
-      } finally {
         setLoading(false);
       }
     };
@@ -77,17 +104,35 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session) {
-          try {
-            const userData = await authApi.getUserProfile();
-            setUser(userData);
-          } catch (error) {
-            console.error('Failed to fetch user profile on auth change:', error);
-            setUser(null);
+          // Retry logic for auth state changes
+          let retryCount = 0;
+          const maxRetries = 2;
+          
+          while (retryCount < maxRetries) {
+            try {
+              const userData = await authApi.getUserProfile();
+              setUser(userData);
+              setLoading(false);
+              return; // Success
+            } catch (error) {
+              retryCount++;
+              if (retryCount < maxRetries) {
+                const delay = 500 * Math.pow(2, retryCount - 1);
+                await new Promise(resolve => setTimeout(resolve, delay));
+              } else {
+                console.error('Failed to fetch user profile on auth change after retries:', error);
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                if (errorMessage.includes('Not authenticated') || errorMessage.includes('User profile not found')) {
+                  setUser(null);
+                }
+                setLoading(false);
+              }
+            }
           }
         } else {
           setUser(null);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
 

@@ -28,10 +28,12 @@ export default function SchoolAdminDashboardPage() {
   const [schoolName, setSchoolName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: dashboard, isLoading, error: dashboardError } = useQuery({
+  const { data: dashboard, isLoading, error: dashboardError, refetch } = useQuery({
     queryKey: ["school-admin-dashboard"],
     queryFn: getSchoolAdminDashboard,
     enabled: !authLoading && !!user && user.role === "school_admin",
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Check if school name is missing and show modal
@@ -92,6 +94,26 @@ export default function SchoolAdminDashboardPage() {
       }
     }
   }, [dashboard, user]);
+
+  // Show error state if query failed
+  if (!authLoading && !isLoading && dashboardError) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+          <Alert variant="destructive" className="max-w-md">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Failed to Load Dashboard</AlertTitle>
+            <AlertDescription className="mt-2">
+              {dashboardError instanceof Error ? dashboardError.message : 'An error occurred while loading your dashboard. Please try again.'}
+            </AlertDescription>
+          </Alert>
+          <Button onClick={() => refetch()} variant="outline">
+            Retry
+          </Button>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (authLoading || isLoading || !dashboard) {
     return (

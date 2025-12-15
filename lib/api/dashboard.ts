@@ -94,34 +94,51 @@ export const getSuperuserDashboard = async (): Promise<SuperuserDashboard> => {
 
 // School Admin Dashboard
 export const getSchoolAdminDashboard = async (): Promise<SchoolAdminDashboard> => {
-  // Get current user's school
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
-    throw new Error('Not authenticated');
-  }
+  try {
+    // Get current user's school
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('Auth error in getSchoolAdminDashboard:', authError);
+      throw new Error(`Authentication failed: ${authError.message || 'Please log in again'}`);
+    }
+    
+    if (!user) {
+      throw new Error('Not authenticated. Please log in again.');
+    }
 
-  const { data: userData } = await supabase
-    .from('users')
-    .select('school_id')
-    .eq('id', user.id)
-    .single();
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('school_id')
+      .eq('id', user.id)
+      .single();
 
-  if (!userData?.school_id) {
-    throw new Error('No school associated with user');
-  }
+    if (userError) {
+      console.error('Database error fetching user in getSchoolAdminDashboard:', userError);
+      throw new Error(`Failed to fetch user data: ${userError.message || 'Database error'}`);
+    }
 
-  const schoolId = userData.school_id;
+    if (!userData?.school_id) {
+      throw new Error('No school associated with your account. Please contact support.');
+    }
 
-  // Get school details
-  const { data: school } = await supabase
-    .from('schools')
-    .select('*')
-    .eq('id', schoolId)
-    .single();
+    const schoolId = userData.school_id;
 
-  if (!school) {
-    throw new Error('School not found');
-  }
+    // Get school details
+    const { data: school, error: schoolError } = await supabase
+      .from('schools')
+      .select('*')
+      .eq('id', schoolId)
+      .single();
+
+    if (schoolError) {
+      console.error('Database error fetching school in getSchoolAdminDashboard:', schoolError);
+      throw new Error(`Failed to fetch school data: ${schoolError.message || 'Database error'}`);
+    }
+
+    if (!school) {
+      throw new Error('School not found. Please contact support.');
+    }
 
   // Get statistics
   const { count: totalStudents } = await supabase
@@ -276,6 +293,14 @@ export const getSchoolAdminDashboard = async (): Promise<SchoolAdminDashboard> =
     },
     recent_students: recentStudents || [],
   };
+  } catch (error: any) {
+    console.error('Error in getSchoolAdminDashboard:', error);
+    // Re-throw with better error message if it's not already an Error
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(error?.message || 'Failed to load dashboard. Please try again.');
+  }
 };
 
 // Staff Dashboard

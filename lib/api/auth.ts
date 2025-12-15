@@ -207,8 +207,13 @@ export const getUserProfile = async (): Promise<User> => {
   try {
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
-    if (authError || !authUser) {
-      throw new Error('Not authenticated');
+    if (authError) {
+      console.error('Auth error in getUserProfile:', authError);
+      throw new Error(`Authentication failed: ${authError.message || 'Please log in again'}`);
+    }
+
+    if (!authUser) {
+      throw new Error('Not authenticated. Please log in again.');
     }
 
     const { data: userData, error: userError } = await supabase
@@ -232,11 +237,12 @@ export const getUserProfile = async (): Promise<User> => {
       .maybeSingle();
 
     if (userError) {
-      throw new Error(userError.message || 'Failed to fetch user profile');
+      console.error('Database error in getUserProfile:', userError);
+      throw new Error(`Failed to fetch user profile: ${userError.message || 'Database error'}`);
     }
 
     if (!userData) {
-      throw new Error('User profile not found');
+      throw new Error('User profile not found. Please contact support.');
     }
 
     // Map to User type
