@@ -18,7 +18,7 @@ export default function StudentDashboardPage() {
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["student-dashboard"],
     queryFn: getStudentDashboard,
-    enabled: !!user && user.role === "student",
+    enabled: !authLoading && !!user && user.role === "student",
   });
 
   useEffect(() => {

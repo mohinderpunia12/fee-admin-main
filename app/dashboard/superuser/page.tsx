@@ -12,47 +12,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { School, Users, UserCheck, TrendingUp, Settings, DollarSign } from "lucide-react";
 import Link from "next/link";
-import { debugLog } from "@/lib/debug-log";
-
-// #region agent log HYPOTHESES: H4 data fetch stuck, H5 settings fetch stuck
-const DEBUG_SESSION = 'debug-session';
-// #endregion
-
 export default function SuperuserDashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
 
-  const { data: dashboard, isLoading } = useQuery({
+  const { data: dashboard, isLoading, error: dashboardError } = useQuery({
     queryKey: ["superuser-dashboard"],
     queryFn: getSuperuserDashboard,
     enabled: true,
   });
 
   // Fetch system settings
-  const { data: settings } = useQuery({
+  const { data: settings, error: settingsError } = useQuery({
     queryKey: ['system-settings'],
     queryFn: getSystemSettings,
     enabled: true,
   });
 
   if (authLoading || isLoading || !dashboard) {
-    // #region agent log
-    debugLog({
-      sessionId: DEBUG_SESSION,
-      runId: 'superuser-loading',
-      hypothesisId: 'H4-H5',
-      location: 'app/dashboard/superuser/page.tsx:46',
-      message: 'loading state',
-      data: {
-        authLoading,
-        dashboardLoading: isLoading,
-        hasDashboard: !!dashboard,
-        settingsLoading: settings === undefined,
-        hasSettings: !!settings,
-      },
-      timestamp: Date.now(),
-    });
-    // #endregion
-
     return (
       <DashboardLayout>
         <PageLoader />
@@ -61,21 +37,6 @@ export default function SuperuserDashboardPage() {
   }
 
   const stats = dashboard.statistics;
-
-  // #region agent log
-  debugLog({
-    sessionId: DEBUG_SESSION,
-    runId: 'superuser-data',
-    hypothesisId: 'H4-H5',
-    location: 'app/dashboard/superuser/page.tsx:72',
-    message: 'dashboard data ready',
-    data: {
-      hasDashboard: !!dashboard,
-      hasSettings: !!settings,
-    },
-    timestamp: Date.now(),
-  });
-  // #endregion
 
   return (
     <DashboardLayout>

@@ -25,7 +25,6 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout";
 type FilterType = "all" | "with_students" | "empty";
 
 export default function ClassRoomsPage() {
-  const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<FilterType>("all");
@@ -34,7 +33,7 @@ export default function ClassRoomsPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedClassRoom, setSelectedClassRoom] = useState<ClassRoom | null>(null);
 
-  // Fetch classrooms based on filter
+  // Fetch classrooms based on filter - call useQuery first to ensure QueryClient context is available
   const { data, isLoading, error } = useQuery({
     queryKey: ["classrooms", currentPage, search, filter],
     queryFn: async () => {
@@ -49,6 +48,9 @@ export default function ClassRoomsPage() {
       }
     },
   });
+
+  // Call useQueryClient after useQuery to ensure QueryClient is available
+  const queryClient = useQueryClient();
 
   // Create mutation
   const createMutation = useMutation({

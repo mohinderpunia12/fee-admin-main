@@ -18,10 +18,10 @@ export default function SchoolAdminDashboardPage() {
   const router = useRouter();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
-  const { data: dashboard, isLoading } = useQuery({
+  const { data: dashboard, isLoading, error: dashboardError } = useQuery({
     queryKey: ["school-admin-dashboard"],
     queryFn: getSchoolAdminDashboard,
-    enabled: !!user && user.role === "school_admin",
+    enabled: !authLoading && !!user && user.role === "school_admin",
   });
 
   useEffect(() => {

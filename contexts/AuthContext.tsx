@@ -5,11 +5,6 @@ import { useRouter } from 'next/navigation';
 import { User, LoginRequest } from '@/types';
 import * as authApi from '@/lib/api/auth';
 import { createClient } from '@/lib/supabase/client';
-import { debugLog } from '@/lib/debug-log';
-
-// #region agent log HYPOTHESES: H9 auth context not hydrating, H10 session missing in client
-const DEBUG_SESSION = 'debug-session';
-// #endregion
 
 interface AuthContextType {
   user: User | null;
@@ -36,6 +31,16 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
   const [loading, setLoading] = useState(!initialUser);
   const router = useRouter();
 
+  // Ensure user is set from initialUser immediately and sync if initialUser changes
+  useEffect(() => {
+    if (initialUser) {
+      if (!user || user.id !== initialUser.id) {
+        setUser(initialUser);
+        setLoading(false);
+      }
+    }
+  }, [initialUser]);
+
   // Check if user is logged in on mount and listen for auth changes
   useEffect(() => {
     const initAuth = async () => {
@@ -44,64 +49,18 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
         if (initialUser) {
           setUser(initialUser);
           setLoading(false);
-
-          debugLog({
-            sessionId: DEBUG_SESSION,
-            runId: 'auth-init',
-            hypothesisId: 'H9-H10',
-            location: 'contexts/AuthContext.tsx:38',
-            message: 'using initialUser',
-            data: { hasInitialUser: true, role: initialUser.role },
-            timestamp: Date.now(),
-          });
           return;
         }
 
         const { data: { session } } = await supabase.auth.getSession();
-
-        // #region agent log
-        debugLog({
-          sessionId: DEBUG_SESSION,
-          runId: 'auth-init',
-          hypothesisId: 'H9-H10',
-          location: 'contexts/AuthContext.tsx:38',
-          message: 'getSession result',
-          data: { hasSession: !!session, userId: session?.user?.id },
-          timestamp: Date.now(),
-        });
-        // #endregion
         
         if (session) {
           try {
             const userData = await authApi.getUserProfile();
             setUser(userData);
-
-            // #region agent log
-            debugLog({
-              sessionId: DEBUG_SESSION,
-              runId: 'auth-init-profile',
-              hypothesisId: 'H9-H10',
-              location: 'contexts/AuthContext.tsx:52',
-              message: 'profile loaded',
-              data: { hasUser: !!userData, role: userData.role },
-              timestamp: Date.now(),
-            });
-            // #endregion
           } catch (error) {
             console.error('Failed to fetch user profile:', error);
             setUser(null);
-
-            // #region agent log
-            debugLog({
-              sessionId: DEBUG_SESSION,
-              runId: 'auth-init-profile',
-              hypothesisId: 'H9-H10',
-              location: 'contexts/AuthContext.tsx:60',
-              message: 'profile load failed',
-              data: { error: error instanceof Error ? error.message : 'unknown' },
-              timestamp: Date.now(),
-            });
-            // #endregion
           }
         }
       } catch (error) {
@@ -117,49 +76,13 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
     const supabase = createClient();
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        // #region agent log
-        debugLog({
-          sessionId: DEBUG_SESSION,
-          runId: 'auth-change',
-          hypothesisId: 'H9-H10',
-          location: 'contexts/AuthContext.tsx:78',
-          message: 'auth change',
-          data: { event, hasSession: !!session, userId: session?.user?.id },
-          timestamp: Date.now(),
-        });
-        // #endregion
-
         if (session) {
           try {
             const userData = await authApi.getUserProfile();
             setUser(userData);
-
-            // #region agent log
-            debugLog({
-              sessionId: DEBUG_SESSION,
-              runId: 'auth-change-profile',
-              hypothesisId: 'H9-H10',
-              location: 'contexts/AuthContext.tsx:88',
-              message: 'profile loaded on change',
-              data: { hasUser: !!userData, role: userData.role },
-              timestamp: Date.now(),
-            });
-            // #endregion
           } catch (error) {
             console.error('Failed to fetch user profile on auth change:', error);
             setUser(null);
-
-            // #region agent log
-            debugLog({
-              sessionId: DEBUG_SESSION,
-              runId: 'auth-change-profile',
-              hypothesisId: 'H9-H10',
-              location: 'contexts/AuthContext.tsx:96',
-              message: 'profile load failed on change',
-              data: { error: error instanceof Error ? error.message : 'unknown' },
-              timestamp: Date.now(),
-            });
-            // #endregion
           }
         } else {
           setUser(null);

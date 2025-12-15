@@ -61,7 +61,7 @@ export default function SchoolsManagementPage() {
   }, [user, authLoading, router]);
 
   // Fetch schools based on filter (must call all hooks before any early returns)
-  const { data: schoolsData, isLoading } = useQuery({
+  const { data: schoolsData, isLoading, error: schoolsError } = useQuery({
     queryKey: ["schools", filterStatus, searchTerm, page, pageSize],
     queryFn: async () => {
       const params: any = {
@@ -83,7 +83,7 @@ export default function SchoolsManagementPage() {
           return schoolsApi.listSchools(params);
       }
     },
-    enabled: !!user && user.role === "superuser",
+    enabled: !authLoading && !!user && user.role === "superuser",
   });
 
   // Mutations

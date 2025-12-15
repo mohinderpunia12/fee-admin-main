@@ -18,7 +18,7 @@ export default function StaffDashboardPage() {
   const { data: dashboard, isLoading } = useQuery({
     queryKey: ["staff-dashboard"],
     queryFn: getStaffDashboard,
-    enabled: !!user && user.role === "staff",
+    enabled: !authLoading && !!user && user.role === "staff",
   });
 
   useEffect(() => {
