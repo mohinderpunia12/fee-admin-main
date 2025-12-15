@@ -146,7 +146,7 @@ export default function SchoolAdminDashboardPage() {
       {/* Show blocking modal if subscription expired */}
       {isSubscriptionExpired && (
         <SubscriptionExpiredModal
-          schoolName={dashboard.school?.name}
+          schoolName={dashboard.school?.name ?? undefined}
           subscriptionEnd={dashboard.school?.subscription_end}
         />
       )}

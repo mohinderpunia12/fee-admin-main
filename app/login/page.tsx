@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useActionState } from 'react';
+import { useState, useActionState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -10,10 +10,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Eye, EyeOff, Loader2, CheckCircle2 } from 'lucide-react';
 import { login, type LoginActionState } from './actions';
 
-export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
+function RegisteredMessage() {
   const searchParams = useSearchParams();
   const registered = searchParams.get('registered');
+  
+  if (registered === 'true') {
+    return (
+      <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md flex items-center gap-2">
+        <CheckCircle2 className="h-4 w-4" />
+        <span>Registration successful! Please sign in with your credentials.</span>
+      </div>
+    );
+  }
+  return null;
+}
+
+export default function LoginPage() {
+  const [showPassword, setShowPassword] = useState(false);
   const [state, formAction, isPending] = useActionState<LoginActionState | null, FormData>(
     login,
     null
@@ -39,12 +52,9 @@ export default function LoginPage() {
         </CardHeader>
         <form action={formAction}>
           <CardContent className="space-y-4">
-            {registered === 'true' && (
-              <div className="p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-md flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Registration successful! Please sign in with your credentials.</span>
-              </div>
-            )}
+            <Suspense fallback={null}>
+              <RegisteredMessage />
+            </Suspense>
             {state?.error && (
               <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
                 {state.error}
