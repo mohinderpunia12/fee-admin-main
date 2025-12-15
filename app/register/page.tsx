@@ -151,21 +151,14 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const submitData = new FormData();
-      submitData.append('school_name', formData.school_name);
-      submitData.append('school_mobile', formData.mobile);
-      submitData.append('email', formData.email);
-      if (formData.address) {
-        submitData.append('address', formData.address);
-      }
-      if (logoFile) {
-        submitData.append('logo', logoFile);
-      }
-      submitData.append('username', formData.username);
-      submitData.append('password', formData.password);
-      submitData.append('password_confirm', formData.confirmPassword);
-
-      await registerSchool(submitData);
+      await registerSchool({
+        school_name: formData.school_name,
+        school_mobile: formData.mobile,
+        email: formData.email,
+        username: formData.username,
+        password: formData.password,
+        password_confirm: formData.confirmPassword,
+      });
 
       toast.success('School registered successfully!', {
         description: 'You have 7 days of free trial. Redirecting to login...',
