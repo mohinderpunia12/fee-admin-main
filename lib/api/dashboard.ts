@@ -95,16 +95,8 @@ export const getSuperuserDashboard = async (): Promise<SuperuserDashboard> => {
 // School Admin Dashboard
 export const getSchoolAdminDashboard = async (): Promise<SchoolAdminDashboard> => {
   try {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/dashboard.ts:96',message:'getSchoolAdminDashboard start',data:{env:typeof window!=='undefined'?window.location.origin:'server'},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
-
     // Get current user's school
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/dashboard.ts:103',message:'auth getUser in dashboard',data:{hasUser:!!user,hasError:!!authError,errorMessage:authError?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H2-H3'})}).catch(()=>{});
-    // #endregion
     
     if (authError) {
       console.error('Auth error in getSchoolAdminDashboard:', authError);
@@ -115,19 +107,11 @@ export const getSchoolAdminDashboard = async (): Promise<SchoolAdminDashboard> =
       throw new Error('Not authenticated. Please log in again.');
     }
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/dashboard.ts:110',message:'querying users for school_id',data:{userId:user.id},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
-
     const { data: userData, error: userError } = await supabase
       .from('users')
       .select('school_id')
       .eq('id', user.id)
       .single();
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/dashboard.ts:118',message:'users query result',data:{hasUserData:!!userData,hasSchoolId:!!userData?.school_id,hasError:!!userError,errorMessage:userError?.message,errorCode:userError?.code},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
 
     if (userError) {
       console.error('Database error fetching user in getSchoolAdminDashboard:', userError);
@@ -140,20 +124,12 @@ export const getSchoolAdminDashboard = async (): Promise<SchoolAdminDashboard> =
 
     const schoolId = userData.school_id;
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/dashboard.ts:130',message:'querying schools',data:{schoolId},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
-
     // Get school details
     const { data: school, error: schoolError } = await supabase
       .from('schools')
       .select('*')
       .eq('id', schoolId)
       .single();
-
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/dashboard.ts:140',message:'schools query result',data:{hasSchool:!!school,hasError:!!schoolError,errorMessage:schoolError?.message,errorCode:schoolError?.code},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
 
     if (schoolError) {
       console.error('Database error fetching school in getSchoolAdminDashboard:', schoolError);

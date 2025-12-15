@@ -36,12 +36,6 @@ export default function SchoolAdminDashboardPage() {
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // #region agent log
-  useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/dashboard/school-admin/page.tsx:36',message:'query state check',data:{authLoading,hasUser:!!user,userRole:user?.role,isEnabled:!authLoading && !!user && user.role === "school_admin",isLoading,hasDashboard:!!dashboard,hasError:!!dashboardError,errorMessage:dashboardError instanceof Error?dashboardError.message:String(dashboardError)},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H4'})}).catch(()=>{});
-  }, [authLoading, user, isLoading, dashboard, dashboardError]);
-  // #endregion
-
   // Check if school name is missing and show modal
   useEffect(() => {
     if (dashboard?.school && !dashboard.school.name) {
