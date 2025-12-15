@@ -220,8 +220,9 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
       // Wait for session to be properly set in cookies before redirecting
       // This is critical - middleware needs to see the session
       let sessionSet = false;
+      const supabaseClient = createClient();
       for (let i = 0; i < 20; i++) {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session } } = await supabaseClient.auth.getSession();
         if (session && session.access_token) {
           sessionSet = true;
           console.log('Session confirmed, ready to redirect');

@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loading-spinner";
 import { pdf } from '@react-pdf/renderer';
 import { FeeReceiptPDF } from '@/components/pdf';
-import apiClient from "@/lib/api/client";
+const fetchJson = async (path: string) => {
+  const res = await fetch(path, { credentials: 'include' });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+  return res.json();
+};
 
 export default function FeeDownloadPage() {
   const params = useParams();
@@ -23,15 +29,10 @@ export default function FeeDownloadPage() {
   useEffect(() => {
     const fetchFeeData = async () => {
       try {
-        if (!token) {
-          // If no token, try to fetch with auth
-          const response = await apiClient.get(`/fee-records/${feeId}/`);
-          setFeeData(response.data);
-        } else {
-          // Use token-based endpoint to get data
-          const response = await apiClient.get(`/fee-records/data/${token}/`);
-          setFeeData(response.data);
-        }
+        const response = !token
+          ? await fetchJson(`/fee-records/${feeId}/`)
+          : await fetchJson(`/fee-records/data/${token}/`);
+        setFeeData(response);
         
         setLoading(false);
         // Auto-download after loading

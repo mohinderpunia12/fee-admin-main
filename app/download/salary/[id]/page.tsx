@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { PageLoader } from "@/components/ui/loading-spinner";
 import { pdf } from '@react-pdf/renderer';
 import { SalarySlipPDF } from '@/components/pdf';
-import apiClient from "@/lib/api/client";
+const fetchJson = async (path: string) => {
+  const res = await fetch(path, { credentials: 'include' });
+  if (!res.ok) {
+    throw new Error(`Request failed: ${res.status}`);
+  }
+  return res.json();
+};
 
 export default function SalaryDownloadPage() {
   const params = useParams();
@@ -23,15 +29,10 @@ export default function SalaryDownloadPage() {
   useEffect(() => {
     const fetchSalaryData = async () => {
       try {
-        if (!token) {
-          // If no token, try to fetch with auth
-          const response = await apiClient.get(`/salary-records/${salaryId}/`);
-          setSalaryData(response.data);
-        } else {
-          // Use token-based endpoint to get data
-          const response = await apiClient.get(`/salary-records/data/${token}/`);
-          setSalaryData(response.data);
-        }
+        const response = !token
+          ? await fetchJson(`/salary-records/${salaryId}/`)
+          : await fetchJson(`/salary-records/data/${token}/`);
+        setSalaryData(response);
         
         setLoading(false);
         // Auto-download after loading
