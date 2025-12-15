@@ -91,6 +91,7 @@ export const login = async (credentials: LoginRequest): Promise<LoginResponse> =
     const user: User = {
       id: userData.id,
       username: userData.username,
+      email: authData.user.email,
       school: school?.id || null,
       school_name: school?.name,
       school_email: school?.email,
@@ -160,13 +161,10 @@ export const registerSchool = async (data: RegisterSchoolRequest): Promise<any> 
       .single();
 
     if (schoolError) {
-      // Rollback: delete auth user if school creation fails
-      try {
-        await supabase.auth.admin.deleteUser(authData.user.id);
-      } catch (adminError) {
-        console.error('Failed to delete auth user during rollback:', adminError);
-      }
-      throw new Error(schoolError.message || 'Failed to create school');
+      // Rollback: Note - cannot delete auth user from client side (requires admin)
+      // The auth user will remain but can be cleaned up by admin later
+      console.error('School creation failed, auth user created but not cleaned up:', authData.user.id);
+      throw new Error(schoolError.message || 'Failed to create school. Please contact support.');
     }
 
     // Create user record in users table
@@ -182,15 +180,15 @@ export const registerSchool = async (data: RegisterSchoolRequest): Promise<any> 
       .single();
 
     if (userError) {
-      // Rollback: delete school and auth user
-      await supabase.from('schools').delete().eq('id', schoolData.id);
-      // Note: admin.deleteUser requires service role key, handle gracefully
+      // Rollback: delete school (if RLS allows)
       try {
-        await supabase.auth.admin.deleteUser(authData.user.id);
-      } catch (adminError) {
-        console.error('Failed to delete auth user during rollback:', adminError);
+        await supabase.from('schools').delete().eq('id', schoolData.id);
+      } catch (deleteError) {
+        console.error('Failed to delete school during rollback:', deleteError);
       }
-      throw new Error(userError.message || 'Failed to create user record');
+      // Note: Cannot delete auth user from client side (requires admin/service role)
+      console.error('User creation failed, auth user and school may need manual cleanup:', authData.user.id);
+      throw new Error(userError.message || 'Failed to create user record. Please contact support.');
     }
 
     return {
@@ -231,7 +229,7 @@ export const getUserProfile = async (): Promise<User> => {
         )
       `)
       .eq('id', authUser.id)
-      .single();
+      .maybeSingle();
 
     if (userError) {
       throw new Error(userError.message || 'Failed to fetch user profile');
@@ -246,6 +244,7 @@ export const getUserProfile = async (): Promise<User> => {
     const user: User = {
       id: userData.id,
       username: userData.username,
+      email: authUser.email,
       school: school?.id || null,
       school_name: school?.name,
       school_email: school?.email,

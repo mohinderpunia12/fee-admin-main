@@ -51,6 +51,7 @@ async function getServerUser(): Promise<User | null> {
   const serverUser: User = {
     id: data.id,
     username: data.username,
+    email: authUser.email,
     school: school?.id ?? null,
     school_name: school?.name ?? undefined,
     school_email: school?.email ?? undefined,

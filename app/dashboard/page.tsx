@@ -1,29 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { debugLog } from '@/lib/debug-log';
-
-// #region agent log HYPOTHESES: H2 user missing after login, H3 proxy not applied to dashboard request
-const DEBUG_SESSION = 'debug-session';
-// #endregion
 
 export default async function DashboardPage() {
   const supabase = await createClient();
   
   // Server-side auth check
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-
-  // #region agent log
-  debugLog({
-    sessionId: DEBUG_SESSION,
-    runId: 'dashboard-getUser',
-    hypothesisId: 'H2-H3',
-    location: 'app/dashboard/page.tsx:19',
-    message: 'dashboard getUser result',
-    data: { hasUser: !!authUser, hasError: !!authError },
-    timestamp: Date.now(),
-  });
-  // #endregion
   
   if (authError || !authUser) {
     redirect('/login');

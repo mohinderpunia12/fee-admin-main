@@ -278,11 +278,11 @@ export function Sidebar({ initialUser }: SidebarProps) {
                 className="h-10 w-10 rounded-full flex items-center justify-center text-white font-bold shadow-md text-sm"
                 style={{ background: 'linear-gradient(135deg, #223E97, #18C3A8)' }}
               >
-                {effectiveUser.username.charAt(0).toUpperCase()}
+                {(effectiveUser.username || effectiveUser.email || 'U').charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold truncate" style={{ color: '#1A1F36' }}>
-                  {effectiveUser.username}
+                  {effectiveUser.username || effectiveUser.email || 'User'}
                 </p>
                 <p className="text-xs font-medium capitalize px-2 py-0.5 rounded-full inline-block mt-1" 
                    style={{ 
@@ -305,11 +305,11 @@ export function Sidebar({ initialUser }: SidebarProps) {
               className="h-12 w-12 rounded-full flex items-center justify-center text-white font-bold shadow-lg text-lg"
               style={{ background: 'linear-gradient(135deg, #223E97, #18C3A8)' }}
             >
-              {effectiveUser.username.charAt(0).toUpperCase()}
+              {(effectiveUser.username || effectiveUser.email || 'U').charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold truncate" style={{ color: '#1A1F36' }}>
-                {effectiveUser.username}
+                {effectiveUser.username || effectiveUser.email || 'User'}
               </p>
               <p className="text-xs font-medium capitalize px-2 py-0.5 rounded-full inline-block mt-1" 
                  style={{ 

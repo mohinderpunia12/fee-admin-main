@@ -71,6 +71,7 @@ async function getInitialUser(): Promise<User | null> {
     const initialUser: User = {
       id: data.id,
       username: data.username,
+      email: authUser.email,
       school: school?.id ?? null,
       school_name: school?.name ?? undefined,
       school_email: school?.email ?? undefined,

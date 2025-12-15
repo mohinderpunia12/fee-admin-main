@@ -3,26 +3,77 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSchoolAdminDashboard } from "@/lib/api/dashboard";
+import { updateSchool } from "@/lib/api/schools";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
 import { LoadingSpinner, PageLoader } from "@/components/ui/loading-spinner";
 import { SubscriptionExpiredModal } from "@/components/ui/subscription-expired-modal";
 import { PaymentModal } from "@/components/payment-modal";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Users, UserCheck, Receipt, Wallet, School, CalendarCheck, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SchoolAdminDashboardPage() {
   const { user, isLoading: authLoading } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showSchoolNameModal, setShowSchoolNameModal] = useState(false);
+  const [schoolName, setSchoolName] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { data: dashboard, isLoading, error: dashboardError } = useQuery({
     queryKey: ["school-admin-dashboard"],
     queryFn: getSchoolAdminDashboard,
     enabled: !authLoading && !!user && user.role === "school_admin",
   });
+
+  // Check if school name is missing and show modal
+  useEffect(() => {
+    if (dashboard?.school && !dashboard.school.name) {
+      setShowSchoolNameModal(true);
+    }
+  }, [dashboard]);
+
+  // Update school name mutation
+  const updateSchoolNameMutation = useMutation({
+    mutationFn: async (name: string) => {
+      if (!dashboard?.school?.id) throw new Error("School ID not found");
+      return updateSchool(dashboard.school.id, {
+        name,
+        mobile: dashboard.school.mobile || "",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["school-admin-dashboard"] });
+      toast.success("School name updated successfully!");
+      setShowSchoolNameModal(false);
+      setSchoolName("");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update school name");
+    },
+  });
+
+  const handleSetSchoolName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!schoolName.trim()) {
+      toast.error("Please enter a school name");
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await updateSchoolNameMutation.mutateAsync(schoolName.trim());
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!authLoading && user && user.role !== "school_admin") {
@@ -56,6 +107,42 @@ export default function SchoolAdminDashboardPage() {
 
   return (
     <DashboardLayout>
+      {/* Show school name setup modal if name is missing */}
+      {showSchoolNameModal && (
+        <Dialog open={showSchoolNameModal} onOpenChange={setShowSchoolNameModal}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Set Your School Name</DialogTitle>
+              <DialogDescription>
+                Please enter your school name to continue using the platform.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSetSchoolName} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="schoolName">School Name *</Label>
+                <Input
+                  id="schoolName"
+                  value={schoolName}
+                  onChange={(e) => setSchoolName(e.target.value)}
+                  placeholder="Enter your school name"
+                  disabled={isSubmitting}
+                  required
+                  autoFocus
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || !schoolName.trim()}
+                >
+                  {isSubmitting ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Show blocking modal if subscription expired */}
       {isSubscriptionExpired && (
         <SubscriptionExpiredModal

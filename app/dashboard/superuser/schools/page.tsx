@@ -183,11 +183,11 @@ export default function SchoolsManagementPage() {
               className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
               style={{ background: "linear-gradient(to bottom right, #223E97, #18C3A8)" }}
             >
-              {school.name.charAt(0)}
+              {(school.name || school.email || 'S').charAt(0).toUpperCase()}
             </div>
           )}
           <div>
-            <span className="font-medium">{school.name}</span>
+            <span className="font-medium">{school.name || 'Unnamed School'}</span>
             {school.email && (
               <p className="text-xs text-muted-foreground">{school.email}</p>
             )}

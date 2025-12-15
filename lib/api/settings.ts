@@ -22,10 +22,35 @@ export const getSystemSettings = async (): Promise<SystemSettings> => {
   const { data, error } = await supabase
     .from('system_settings')
     .select('*')
-    .single();
+    .maybeSingle();
 
   if (error) {
+    // If table doesn't exist or no settings found, return default values
+    if (error.code === 'PGRST116' || error.message.includes('relation') || error.message.includes('does not exist')) {
+      return {
+        id: 0,
+        monthly_subscription_amount: 299,
+        trial_period_days: 7,
+        support_email: 'support@example.com',
+        support_mobile: '+1234567890',
+        support_address: '',
+        updated_at: new Date().toISOString(),
+      } as SystemSettings;
+    }
     throw new Error(error.message);
+  }
+
+  if (!data) {
+    // Return default settings if none exist
+    return {
+      id: 0,
+      monthly_subscription_amount: 299,
+      trial_period_days: 7,
+      support_email: 'support@example.com',
+      support_mobile: '+1234567890',
+      support_address: '',
+      updated_at: new Date().toISOString(),
+    } as SystemSettings;
   }
 
   return {

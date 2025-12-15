@@ -1,7 +1,8 @@
 // User & Authentication Types
 export interface User {
   id: string; // UUID from Supabase auth
-  username: string;
+  username: string | null;
+  email?: string; // Email from auth.users
   school: School | number | null;
   school_name?: string;
   school_email?: string;
