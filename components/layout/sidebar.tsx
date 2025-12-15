@@ -24,9 +24,9 @@ import {
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import type { User } from "@/types";
+import { debugLog } from "@/lib/debug-log";
 
 // #region agent log HYPOTHESES: H7 auth context delay, H8 nav render timing
-const DEBUG_ENDPOINT = 'http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400';
 const DEBUG_SESSION = 'debug-session';
 // #endregion
 interface NavItem {
@@ -186,24 +186,20 @@ export function Sidebar({ initialUser }: SidebarProps) {
 
   // #region agent log
   useEffect(() => {
-    fetch(DEBUG_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: DEBUG_SESSION,
-        runId: 'sidebar-render',
-        hypothesisId: 'H7-H8',
-        location: 'components/layout/sidebar.tsx',
-        message: 'sidebar state',
-        data: {
-          hasUser: !!effectiveUser,
-          loading,
-          navCount: filteredNavItems.length,
-          pathname,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
+    debugLog({
+      sessionId: DEBUG_SESSION,
+      runId: 'sidebar-render',
+      hypothesisId: 'H7-H8',
+      location: 'components/layout/sidebar.tsx',
+      message: 'sidebar state',
+      data: {
+        hasUser: !!effectiveUser,
+        loading,
+        navCount: filteredNavItems.length,
+        pathname,
+      },
+      timestamp: Date.now(),
+    });
   }, [user, loading, filteredNavItems.length, pathname]);
   // #endregion
 

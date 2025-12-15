@@ -1,11 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { type NextRequest, NextResponse } from 'next/server';
+import { debugLog } from '@/lib/debug-log';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
 // #region agent log HYPOTHESES: H3 proxy not refreshing cookies
-const DEBUG_ENDPOINT = 'http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400';
 const DEBUG_SESSION = 'debug-session';
 // #endregion
 
@@ -33,19 +33,15 @@ export async function updateSession(request: NextRequest) {
   });
 
   // #region agent log
-  fetch(DEBUG_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION,
-      runId: 'proxy-entry',
-      hypothesisId: 'H3',
-      location: 'lib/supabase/proxy.ts:31',
-      message: 'proxy start',
-      data: { path: request.nextUrl.pathname },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
+  debugLog({
+    sessionId: DEBUG_SESSION,
+    runId: 'proxy-entry',
+    hypothesisId: 'H3',
+    location: 'lib/supabase/proxy.ts:31',
+    message: 'proxy start',
+    data: { path: request.nextUrl.pathname },
+    timestamp: Date.now(),
+  });
   // #endregion
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -87,22 +83,18 @@ export async function updateSession(request: NextRequest) {
   const { data, error } = await supabase.auth.getUser();
 
   // #region agent log
-  fetch(DEBUG_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION,
-      runId: 'proxy-getUser',
-      hypothesisId: 'H3',
-      location: 'lib/supabase/proxy.ts:63',
-      message: 'getUser result',
-      data: {
-        hasUser: !!data?.user,
-        hasError: !!error,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
+  debugLog({
+    sessionId: DEBUG_SESSION,
+    runId: 'proxy-getUser',
+    hypothesisId: 'H3',
+    location: 'lib/supabase/proxy.ts:63',
+    message: 'getUser result',
+    data: {
+      hasUser: !!data?.user,
+      hasError: !!error,
+    },
+    timestamp: Date.now(),
+  });
   // #endregion
 
   return response;

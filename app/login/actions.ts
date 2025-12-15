@@ -3,9 +3,9 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { debugLog } from '@/lib/debug-log';
 
 // #region agent log HYPOTHESES: H1 cookie write failure, H2 auth user missing, H3 proxy not refreshing
-const DEBUG_ENDPOINT = 'http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400';
 const DEBUG_SESSION = 'debug-session';
 // #endregion
 
@@ -25,19 +25,15 @@ export async function login(
   const password = formData.get('password') as string | null;
 
   // #region agent log
-  fetch(DEBUG_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION,
-      runId: 'pre-signin',
-      hypothesisId: 'H1-H2',
-      location: 'app/login/actions.ts:32',
-      message: 'login action start',
-      data: { emailPresent: !!email, passwordPresent: !!password, email },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
+  debugLog({
+    sessionId: DEBUG_SESSION,
+    runId: 'pre-signin',
+    hypothesisId: 'H1-H2',
+    location: 'app/login/actions.ts:32',
+    message: 'login action start',
+    data: { emailPresent: !!email, passwordPresent: !!password, email },
+    timestamp: Date.now(),
+  });
   // #endregion
 
   // Validate inputs
@@ -62,23 +58,19 @@ export async function login(
       });
 
     // #region agent log
-    fetch(DEBUG_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: DEBUG_SESSION,
-        runId: 'post-signin',
-        hypothesisId: 'H1-H2',
-        location: 'app/login/actions.ts:58',
-        message: 'signIn result',
-        data: {
-          hasError: !!authError,
-          hasSession: !!authData?.session,
-          hasUser: !!authData?.user,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
+    debugLog({
+      sessionId: DEBUG_SESSION,
+      runId: 'post-signin',
+      hypothesisId: 'H1-H2',
+      location: 'app/login/actions.ts:58',
+      message: 'signIn result',
+      data: {
+        hasError: !!authError,
+        hasSession: !!authData?.session,
+        hasUser: !!authData?.user,
+      },
+      timestamp: Date.now(),
+    });
     // #endregion
 
     if (authError || !authData.session || !authData.user) {
@@ -89,19 +81,15 @@ export async function login(
     revalidatePath('/', 'layout');
 
     // #region agent log
-    fetch(DEBUG_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: DEBUG_SESSION,
-        runId: 'pre-redirect',
-        hypothesisId: 'H1-H2',
-        location: 'app/login/actions.ts:78',
-        message: 'redirecting to dashboard',
-        data: {},
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
+    debugLog({
+      sessionId: DEBUG_SESSION,
+      runId: 'pre-redirect',
+      hypothesisId: 'H1-H2',
+      location: 'app/login/actions.ts:78',
+      message: 'redirecting to dashboard',
+      data: {},
+      timestamp: Date.now(),
+    });
     // #endregion
 
     // Redirect to dashboard - this happens in the same response that sets cookies

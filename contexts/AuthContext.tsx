@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { User, LoginRequest } from '@/types';
 import * as authApi from '@/lib/api/auth';
 import { createClient } from '@/lib/supabase/client';
+import { debugLog } from '@/lib/debug-log';
 
 // #region agent log HYPOTHESES: H9 auth context not hydrating, H10 session missing in client
-const DEBUG_ENDPOINT = 'http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400';
 const DEBUG_SESSION = 'debug-session';
 // #endregion
 
@@ -45,38 +45,30 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
           setUser(initialUser);
           setLoading(false);
 
-          fetch(DEBUG_ENDPOINT, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sessionId: DEBUG_SESSION,
-              runId: 'auth-init',
-              hypothesisId: 'H9-H10',
-              location: 'contexts/AuthContext.tsx:38',
-              message: 'using initialUser',
-              data: { hasInitialUser: true, role: initialUser.role },
-              timestamp: Date.now(),
-            }),
-          }).catch(() => {});
+          debugLog({
+            sessionId: DEBUG_SESSION,
+            runId: 'auth-init',
+            hypothesisId: 'H9-H10',
+            location: 'contexts/AuthContext.tsx:38',
+            message: 'using initialUser',
+            data: { hasInitialUser: true, role: initialUser.role },
+            timestamp: Date.now(),
+          });
           return;
         }
 
         const { data: { session } } = await supabase.auth.getSession();
 
         // #region agent log
-        fetch(DEBUG_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: DEBUG_SESSION,
-            runId: 'auth-init',
-            hypothesisId: 'H9-H10',
-            location: 'contexts/AuthContext.tsx:38',
-            message: 'getSession result',
-            data: { hasSession: !!session, userId: session?.user?.id },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
+        debugLog({
+          sessionId: DEBUG_SESSION,
+          runId: 'auth-init',
+          hypothesisId: 'H9-H10',
+          location: 'contexts/AuthContext.tsx:38',
+          message: 'getSession result',
+          data: { hasSession: !!session, userId: session?.user?.id },
+          timestamp: Date.now(),
+        });
         // #endregion
         
         if (session) {
@@ -85,38 +77,30 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
             setUser(userData);
 
             // #region agent log
-            fetch(DEBUG_ENDPOINT, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                sessionId: DEBUG_SESSION,
-                runId: 'auth-init-profile',
-                hypothesisId: 'H9-H10',
-                location: 'contexts/AuthContext.tsx:52',
-                message: 'profile loaded',
-                data: { hasUser: !!userData, role: userData.role },
-                timestamp: Date.now(),
-              }),
-            }).catch(() => {});
+            debugLog({
+              sessionId: DEBUG_SESSION,
+              runId: 'auth-init-profile',
+              hypothesisId: 'H9-H10',
+              location: 'contexts/AuthContext.tsx:52',
+              message: 'profile loaded',
+              data: { hasUser: !!userData, role: userData.role },
+              timestamp: Date.now(),
+            });
             // #endregion
           } catch (error) {
             console.error('Failed to fetch user profile:', error);
             setUser(null);
 
             // #region agent log
-            fetch(DEBUG_ENDPOINT, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                sessionId: DEBUG_SESSION,
-                runId: 'auth-init-profile',
-                hypothesisId: 'H9-H10',
-                location: 'contexts/AuthContext.tsx:60',
-                message: 'profile load failed',
-                data: { error: error instanceof Error ? error.message : 'unknown' },
-                timestamp: Date.now(),
-              }),
-            }).catch(() => {});
+            debugLog({
+              sessionId: DEBUG_SESSION,
+              runId: 'auth-init-profile',
+              hypothesisId: 'H9-H10',
+              location: 'contexts/AuthContext.tsx:60',
+              message: 'profile load failed',
+              data: { error: error instanceof Error ? error.message : 'unknown' },
+              timestamp: Date.now(),
+            });
             // #endregion
           }
         }
@@ -134,19 +118,15 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         // #region agent log
-        fetch(DEBUG_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sessionId: DEBUG_SESSION,
-            runId: 'auth-change',
-            hypothesisId: 'H9-H10',
-            location: 'contexts/AuthContext.tsx:78',
-            message: 'auth change',
-            data: { event, hasSession: !!session, userId: session?.user?.id },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
+        debugLog({
+          sessionId: DEBUG_SESSION,
+          runId: 'auth-change',
+          hypothesisId: 'H9-H10',
+          location: 'contexts/AuthContext.tsx:78',
+          message: 'auth change',
+          data: { event, hasSession: !!session, userId: session?.user?.id },
+          timestamp: Date.now(),
+        });
         // #endregion
 
         if (session) {
@@ -155,38 +135,30 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
             setUser(userData);
 
             // #region agent log
-            fetch(DEBUG_ENDPOINT, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                sessionId: DEBUG_SESSION,
-                runId: 'auth-change-profile',
-                hypothesisId: 'H9-H10',
-                location: 'contexts/AuthContext.tsx:88',
-                message: 'profile loaded on change',
-                data: { hasUser: !!userData, role: userData.role },
-                timestamp: Date.now(),
-              }),
-            }).catch(() => {});
+            debugLog({
+              sessionId: DEBUG_SESSION,
+              runId: 'auth-change-profile',
+              hypothesisId: 'H9-H10',
+              location: 'contexts/AuthContext.tsx:88',
+              message: 'profile loaded on change',
+              data: { hasUser: !!userData, role: userData.role },
+              timestamp: Date.now(),
+            });
             // #endregion
           } catch (error) {
             console.error('Failed to fetch user profile on auth change:', error);
             setUser(null);
 
             // #region agent log
-            fetch(DEBUG_ENDPOINT, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                sessionId: DEBUG_SESSION,
-                runId: 'auth-change-profile',
-                hypothesisId: 'H9-H10',
-                location: 'contexts/AuthContext.tsx:96',
-                message: 'profile load failed on change',
-                data: { error: error instanceof Error ? error.message : 'unknown' },
-                timestamp: Date.now(),
-              }),
-            }).catch(() => {});
+            debugLog({
+              sessionId: DEBUG_SESSION,
+              runId: 'auth-change-profile',
+              hypothesisId: 'H9-H10',
+              location: 'contexts/AuthContext.tsx:96',
+              message: 'profile load failed on change',
+              data: { error: error instanceof Error ? error.message : 'unknown' },
+              timestamp: Date.now(),
+            });
             // #endregion
           }
         } else {

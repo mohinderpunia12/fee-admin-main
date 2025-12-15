@@ -12,9 +12,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { School, Users, UserCheck, TrendingUp, Settings, DollarSign } from "lucide-react";
 import Link from "next/link";
+import { debugLog } from "@/lib/debug-log";
 
 // #region agent log HYPOTHESES: H4 data fetch stuck, H5 settings fetch stuck
-const DEBUG_ENDPOINT = 'http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400';
 const DEBUG_SESSION = 'debug-session';
 // #endregion
 
@@ -36,25 +36,21 @@ export default function SuperuserDashboardPage() {
 
   if (authLoading || isLoading || !dashboard) {
     // #region agent log
-    fetch(DEBUG_ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        sessionId: DEBUG_SESSION,
-        runId: 'superuser-loading',
-        hypothesisId: 'H4-H5',
-        location: 'app/dashboard/superuser/page.tsx:46',
-        message: 'loading state',
-        data: {
-          authLoading,
-          dashboardLoading: isLoading,
-          hasDashboard: !!dashboard,
-          settingsLoading: settings === undefined,
-          hasSettings: !!settings,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
+    debugLog({
+      sessionId: DEBUG_SESSION,
+      runId: 'superuser-loading',
+      hypothesisId: 'H4-H5',
+      location: 'app/dashboard/superuser/page.tsx:46',
+      message: 'loading state',
+      data: {
+        authLoading,
+        dashboardLoading: isLoading,
+        hasDashboard: !!dashboard,
+        settingsLoading: settings === undefined,
+        hasSettings: !!settings,
+      },
+      timestamp: Date.now(),
+    });
     // #endregion
 
     return (
@@ -67,22 +63,18 @@ export default function SuperuserDashboardPage() {
   const stats = dashboard.statistics;
 
   // #region agent log
-  fetch(DEBUG_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION,
-      runId: 'superuser-data',
-      hypothesisId: 'H4-H5',
-      location: 'app/dashboard/superuser/page.tsx:72',
-      message: 'dashboard data ready',
-      data: {
-        hasDashboard: !!dashboard,
-        hasSettings: !!settings,
-      },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
+  debugLog({
+    sessionId: DEBUG_SESSION,
+    runId: 'superuser-data',
+    hypothesisId: 'H4-H5',
+    location: 'app/dashboard/superuser/page.tsx:72',
+    message: 'dashboard data ready',
+    data: {
+      hasDashboard: !!dashboard,
+      hasSettings: !!settings,
+    },
+    timestamp: Date.now(),
+  });
   // #endregion
 
   return (
