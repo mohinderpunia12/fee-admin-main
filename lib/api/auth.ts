@@ -205,7 +205,15 @@ export const registerSchool = async (data: RegisterSchoolRequest): Promise<any> 
 // Get User Profile
 export const getUserProfile = async (): Promise<User> => {
   try {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/auth.ts:206',message:'getUserProfile start',data:{env:typeof window!=='undefined'?window.location.origin:'server'},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
+
     const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/auth.ts:212',message:'auth getUser result',data:{hasAuthUser:!!authUser,hasError:!!authError,errorMessage:authError?.message,errorCode:authError?.status},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H2-H3'})}).catch(()=>{});
+    // #endregion
 
     if (authError) {
       console.error('Auth error in getUserProfile:', authError);
@@ -215,6 +223,10 @@ export const getUserProfile = async (): Promise<User> => {
     if (!authUser) {
       throw new Error('Not authenticated. Please log in again.');
     }
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/auth.ts:217',message:'querying users table',data:{authUserId:authUser.id},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
 
     const { data: userData, error: userError } = await supabase
       .from('users')
@@ -235,6 +247,10 @@ export const getUserProfile = async (): Promise<User> => {
       `)
       .eq('id', authUser.id)
       .maybeSingle();
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'lib/api/auth.ts:238',message:'users query result',data:{hasUserData:!!userData,hasError:!!userError,errorMessage:userError?.message,errorCode:userError?.code,userRole:userData?.role},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
 
     if (userError) {
       console.error('Database error in getUserProfile:', userError);

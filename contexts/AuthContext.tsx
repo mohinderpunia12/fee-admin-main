@@ -44,15 +44,30 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
   // Check if user is logged in on mount and listen for auth changes
   useEffect(() => {
     const initAuth = async () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:45',message:'initAuth start',data:{hasInitialUser:!!initialUser,env:typeof window!=='undefined'?window.location.origin:'server'},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H1-H5'})}).catch(()=>{});
+      // #endregion
+
       const supabase = createClient();
       try {
         if (initialUser) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:50',message:'using initialUser',data:{userRole:initialUser.role},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
           setUser(initialUser);
           setLoading(false);
           return;
         }
 
-        const { data: { session } } = await supabase.auth.getSession();
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:58',message:'calling getSession',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H2'})}).catch(()=>{});
+        // #endregion
+
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:62',message:'getSession result',data:{hasSession:!!session,hasError:!!sessionError,errorMessage:sessionError?.message,hasAccessToken:!!session?.access_token},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H2-H3'})}).catch(()=>{});
+        // #endregion
         
         if (session) {
           // Retry logic with exponential backoff
@@ -62,13 +77,26 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
 
           while (retryCount < maxRetries) {
             try {
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:70',message:'calling getUserProfile',data:{retryCount,attempt:retryCount+1},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
+              // #endregion
+
               const userData = await authApi.getUserProfile();
+              
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:75',message:'getUserProfile success',data:{hasUserData:!!userData,userRole:userData?.role,userId:userData?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
+              // #endregion
+
               setUser(userData);
               setLoading(false);
               return; // Success, exit retry loop
             } catch (error) {
               lastError = error;
               retryCount++;
+              
+              // #region agent log
+              fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:84',message:'getUserProfile failed',data:{retryCount,errorMessage:(error as any)?.message,errorName:(error as any)?.name,willRetry:retryCount<maxRetries},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
+              // #endregion
               
               if (retryCount < maxRetries) {
                 // Exponential backoff: 500ms, 1000ms, 2000ms
@@ -77,6 +105,9 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
                 await new Promise(resolve => setTimeout(resolve, delay));
               } else {
                 // All retries exhausted
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:95',message:'all retries exhausted',data:{errorMessage:(lastError as any)?.message,willSetUserNull:true},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H3'})}).catch(()=>{});
+                // #endregion
                 console.error('Failed to fetch user profile after all retries:', lastError);
                 // Only set user to null if it's a permanent error (not auth-related)
                 const errorMessage = lastError instanceof Error ? lastError.message : String(lastError);
@@ -89,11 +120,21 @@ export const AuthProvider = ({ children, initialUser = null }: AuthProviderProps
             }
           }
         } else {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:108',message:'no session found',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H2'})}).catch(()=>{});
+          // #endregion
           setLoading(false);
         }
       } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:112',message:'initAuth error',data:{errorMessage:(error as any)?.message},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H1-H5'})}).catch(()=>{});
+        // #endregion
         console.error('Auth initialization error:', error);
         setLoading(false);
+      } finally {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/1a03ea7a-b0aa-4121-ba33-1e913d00c400',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'contexts/AuthContext.tsx:116',message:'initAuth finally',data:{loading:false,hasUser:!!user},timestamp:Date.now(),sessionId:'debug-session',runId:'prod-debug',hypothesisId:'H1-H5'})}).catch(()=>{});
+        // #endregion
       }
     };
 
