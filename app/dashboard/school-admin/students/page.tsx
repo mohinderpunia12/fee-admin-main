@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, UserPlus, Eye, UserX, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -69,15 +69,46 @@ export default function StudentsPage() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: createStudent,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('[StudentsPage] Student created successfully:', data);
       queryClient.invalidateQueries({ queryKey: ["students"] });
       toast.success("Student created successfully!");
       setIsCreateModalOpen(false);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to create student");
+      console.error('[StudentsPage] Error creating student:', {
+        error,
+        message: error?.message,
+        response: error?.response,
+        stack: error?.stack
+      });
+      
+      // Extract error message from various error formats
+      let errorMessage = "Failed to create student";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      console.error('[StudentsPage] Displaying error to user:', errorMessage);
+      toast.error(errorMessage, { duration: 5000 });
     },
   });
+
+  // Debug mutation state
+  useEffect(() => {
+    console.log('[StudentsPage] createMutation state:', {
+      isPending: createMutation.isPending,
+      isSuccess: createMutation.isSuccess,
+      isError: createMutation.isError,
+      status: createMutation.status
+    });
+  }, [createMutation.isPending, createMutation.isSuccess, createMutation.isError, createMutation.status]);
 
   // Update mutation
   const updateMutation = useMutation({
@@ -127,13 +158,34 @@ export default function StudentsPage() {
   const deleteMutation = useMutation({
     mutationFn: deleteStudent,
     onSuccess: () => {
+      console.log('[StudentsPage] Student deleted successfully');
       queryClient.invalidateQueries({ queryKey: ["students"] });
       toast.success("Student deleted successfully!");
       setIsDeleteDialogOpen(false);
       setSelectedStudent(null);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.error || "Failed to delete student");
+      console.error('[StudentsPage] Error deleting student:', {
+        error,
+        message: error?.message,
+        response: error?.response,
+        stack: error?.stack
+      });
+      
+      // Extract error message from various error formats
+      let errorMessage = "Failed to delete student";
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      console.error('[StudentsPage] Displaying error to user:', errorMessage);
+      toast.error(errorMessage, { duration: 5000 });
     },
   });
 
@@ -197,20 +249,29 @@ export default function StudentsPage() {
   ];
 
   const handleCreate = (data: any) => {
+    console.log('[StudentsPage] handleCreate called with data:', {
+      ...data,
+      profile_picture: data.profile_picture instanceof File ? `File(${data.profile_picture.name}, ${data.profile_picture.size} bytes)` : data.profile_picture
+    });
+    
     // Validate that at least one of admission_no or roll_number is provided
     if (!data.admission_no && !data.roll_number) {
+      console.warn('[StudentsPage] Validation failed: Missing admission_no and roll_number');
       toast.error("Either Admission Number or Roll Number must be provided");
       return;
     }
+    
     // Client-side file size check for profile picture
     if (data.profile_picture instanceof File) {
       const maxSize = 5 * 1024 * 1024; // 5MB
       if (data.profile_picture.size > maxSize) {
+        console.warn('[StudentsPage] Validation failed: Profile picture too large');
         toast.error('Profile picture must be 5MB or smaller.');
         return;
       }
     }
 
+    console.log('[StudentsPage] Calling createMutation.mutate');
     createMutation.mutate(data);
   };
 
@@ -554,11 +615,15 @@ export default function StudentsPage() {
       {/* Create Modal */}
       <FormModal
         isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
+        onClose={() => {
+          console.log('[StudentsPage] Create modal closing');
+          setIsCreateModalOpen(false);
+        }}
         onSubmit={handleCreate}
         title="Add New Student"
         description="Create a new student record"
         fields={formFields}
+        isLoading={createMutation.isPending}
       />
 
       {/* Edit Modal */}
@@ -573,6 +638,7 @@ export default function StudentsPage() {
         description="Update student information"
         fields={formFields}
         initialData={selectedStudent || undefined}
+        isLoading={updateMutation.isPending}
       />
 
       {/* Create User Modal */}
@@ -586,17 +652,26 @@ export default function StudentsPage() {
         title="Create User Account"
         description={`Create login account for ${selectedStudent?.first_name} ${selectedStudent?.last_name}`}
         fields={createUserFields}
+        isLoading={createUserMutation.isPending}
       />
       {/* Delete Dialog */}
       <DeleteDialog
         isOpen={isDeleteDialogOpen}
-        onOpenChange={(open) => setIsDeleteDialogOpen(open)}
+        onOpenChange={(open) => {
+          console.log('[StudentsPage] Delete dialog open change:', open);
+          setIsDeleteDialogOpen(open);
+        }}
         onConfirm={() => {
-          if (selectedStudent) deleteMutation.mutate(selectedStudent.id);
+          if (selectedStudent) {
+            console.log('[StudentsPage] Delete confirmed for student:', selectedStudent.id);
+            deleteMutation.mutate(selectedStudent.id);
+          } else {
+            console.warn('[StudentsPage] Delete confirmed but no student selected');
+          }
         }}
         title="Delete Student"
         description="Deleting a student will also remove their fee records and attendance. This action cannot be undone."
-        isLoading={deleteMutation.status === 'pending'}
+        isLoading={deleteMutation.isPending}
       />
     </div>
     </DashboardLayout>

@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 export interface FormField {
   name: string;
@@ -34,6 +35,7 @@ interface FormModalProps {
   fields?: FormField[];
   initialData?: any;
   children?: React.ReactNode;
+  isLoading?: boolean;
 }
 
 export function FormModal({
@@ -47,6 +49,7 @@ export function FormModal({
   fields,
   initialData,
   children,
+  isLoading = false,
 }: FormModalProps) {
   const [formData, setFormData] = useState<any>(initialData || {});
   const isDialogOpen = open ?? isOpen ?? false;
@@ -58,15 +61,26 @@ export function FormModal({
   }, [initialData]);
 
   const handleClose = (open: boolean) => {
+    console.log('[FormModal] Modal close requested, open:', open);
     if (onOpenChange) onOpenChange(open);
     if (!open && onClose) onClose();
-    if (!open) setFormData(initialData || {});
+    // Only clear form when modal is actually closed (on success, modal closes)
+    if (!open) {
+      console.log('[FormModal] Modal closed, resetting form data');
+      setFormData(initialData || {});
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) {
+      console.log('[FormModal] Form submission prevented - already loading');
+      return;
+    }
+    console.log('[FormModal] Form submitted with data:', formData);
+    // Don't clear form here - let the parent component handle success/error
+    // Form will be cleared when modal closes (which happens on success)
     onSubmit(formData);
-    setFormData(initialData || {});
   };
   const handleChange = (name: string, value: any) => {
     setFormData((prev: any) => ({ ...prev, [name]: value }));
@@ -97,7 +111,8 @@ export function FormModal({
                     value={formData[field.name] || ""}
                     onChange={(e) => handleChange(field.name, e.target.value)}
                     required={field.required}
-                    className="w-full px-3 py-2 border rounded-md"
+                    disabled={isLoading}
+                    className="w-full px-3 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <option value="">Select...</option>
                     {field.options?.map((option) => (
@@ -113,7 +128,8 @@ export function FormModal({
                     onChange={(e) => handleChange(field.name, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
-                    className="w-full px-3 py-2 border rounded-md min-h-[100px]"
+                    disabled={isLoading}
+                    className="w-full px-3 py-2 border rounded-md min-h-[100px] disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 ) : field.type === "file" ? (
                   <Input
@@ -122,6 +138,7 @@ export function FormModal({
                     accept={field.accept}
                     onChange={(e) => handleFileChange(field.name, e.target.files?.[0] || null)}
                     required={field.required}
+                    disabled={isLoading}
                   />
                 ) : (
                   <Input
@@ -131,6 +148,7 @@ export function FormModal({
                     onChange={(e) => handleChange(field.name, e.target.value)}
                     placeholder={field.placeholder}
                     required={field.required}
+                    disabled={isLoading}
                   />
                 )}
                 {field.description && (
@@ -143,10 +161,20 @@ export function FormModal({
                 type="button"
                 variant="outline"
                 onClick={() => handleClose(false)}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
-              <Button type="submit">Submit</Button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creating...
+                  </>
+                ) : (
+                  "Submit"
+                )}
+              </Button>
             </div>
           </form>
         )}

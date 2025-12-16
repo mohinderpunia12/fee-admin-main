@@ -81,59 +81,148 @@ export const listStudents = async (params?: {
 
 // Create Student
 export const createStudent = async (data: any): Promise<Student> => {
-  // Handle profile picture upload if provided
-  let profilePicturePath: string | null = null;
-  if (data.profile_picture instanceof File) {
-    const tempId = Date.now();
-    const { url, error: uploadError } = await uploadStudentProfile(tempId, data.profile_picture);
-    if (uploadError) {
-      throw new Error(`Failed to upload profile picture: ${uploadError.message}`);
+  console.log('[createStudent] Starting student creation with data:', {
+    ...data,
+    profile_picture: data.profile_picture instanceof File ? `File(${data.profile_picture.name}, ${data.profile_picture.size} bytes)` : data.profile_picture
+  });
+
+  try {
+    // Handle profile picture upload if provided
+    let profilePicturePath: string | null = null;
+    if (data.profile_picture instanceof File) {
+      console.log('[createStudent] Uploading profile picture...');
+      const tempId = Date.now();
+      const { url, error: uploadError } = await uploadStudentProfile(tempId, data.profile_picture);
+      if (uploadError) {
+        console.error('[createStudent] Profile picture upload failed:', uploadError);
+        throw new Error(`Failed to upload profile picture: ${uploadError.message}`);
+      }
+      profilePicturePath = url.split('/storage/v1/object/public/profiles/students/')[1] || null;
+      console.log('[createStudent] Profile picture uploaded successfully:', profilePicturePath);
     }
-    profilePicturePath = url.split('/storage/v1/object/public/profiles/students/')[1] || null;
+
+    // Get user's school_id if not provided in data
+    let schoolId = data.school || data.school_id;
+    console.log('[createStudent] Initial school_id from data:', schoolId);
+    
+    if (!schoolId) {
+      console.log('[createStudent] school_id not provided, fetching from user context...');
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error('[createStudent] Failed to get auth user:', authError);
+        throw new Error(`Authentication error: ${authError.message}`);
+      }
+      
+      if (!authUser) {
+        console.error('[createStudent] No authenticated user found');
+        throw new Error('You must be logged in to create a student');
+      }
+      
+      console.log('[createStudent] Auth user ID:', authUser.id);
+      
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('school_id, role')
+        .eq('id', authUser.id)
+        .single();
+        
+      if (userError) {
+        console.error('[createStudent] Failed to fetch user data:', userError);
+        throw new Error(`Failed to fetch user information: ${userError.message}`);
+      }
+      
+      if (!userData) {
+        console.error('[createStudent] User data not found');
+        throw new Error('User profile not found. Please contact support.');
+      }
+      
+      console.log('[createStudent] User data:', { school_id: userData.school_id, role: userData.role });
+      
+      if (userData?.school_id) {
+        schoolId = userData.school_id;
+        console.log('[createStudent] Using school_id from user context:', schoolId);
+      } else {
+        console.warn('[createStudent] User has no school_id assigned');
+        throw new Error('Your account is not associated with a school. Please contact support.');
+      }
+    }
+
+    const insertData: any = {
+      school_id: schoolId,
+      classroom_id: data.classroom || data.classroom_id || null,
+      admission_no: data.admission_no || null,
+      roll_number: data.roll_number || null,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      dob: data.dob,
+      gender: data.gender,
+      mobile: data.mobile,
+      address: data.address,
+      parent_guardian_name: data.parent_guardian_name,
+      parent_guardian_contact: data.parent_guardian_contact,
+      enrollment_status: data.enrollment_status || 'active',
+      total_amount: data.total_amount || null,
+      profile_picture: profilePicturePath,
+    };
+
+    console.log('[createStudent] Inserting student data:', {
+      ...insertData,
+      profile_picture: insertData.profile_picture ? 'SET' : 'NULL'
+    });
+
+    const { data: studentData, error } = await supabase
+      .from('students')
+      .insert(insertData)
+      .select(`
+        *,
+        classrooms:classroom_id (
+          id,
+          name,
+          section
+        )
+      `)
+      .single();
+
+    if (error) {
+      console.error('[createStudent] Supabase insert error:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(error.message || 'Failed to create student');
+    }
+
+    if (!studentData) {
+      console.error('[createStudent] No data returned from insert');
+      throw new Error('Student creation failed: No data returned');
+    }
+
+    console.log('[createStudent] Student created successfully:', studentData.id);
+
+    const result = {
+      ...studentData,
+      school: studentData.school_id,
+      classroom: studentData.classroom_id,
+      classroom_name: studentData.classrooms ? `${studentData.classrooms.name} - ${studentData.classrooms.section}` : undefined,
+      profile_picture_url: studentData.profile_picture ? getPublicUrl('profiles', `students/${studentData.profile_picture}`) : null,
+    } as Student;
+    
+    console.log('[createStudent] Student creation completed successfully');
+    return result;
+  } catch (error: any) {
+    console.error('[createStudent] Error in createStudent:', {
+      message: error?.message,
+      stack: error?.stack,
+      error: error
+    });
+    // Re-throw with more context if needed
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(error?.message || 'An unexpected error occurred while creating the student');
   }
-
-  const insertData: any = {
-    school_id: data.school || data.school_id,
-    classroom_id: data.classroom || data.classroom_id || null,
-    admission_no: data.admission_no || null,
-    roll_number: data.roll_number || null,
-    first_name: data.first_name,
-    last_name: data.last_name,
-    dob: data.dob,
-    gender: data.gender,
-    mobile: data.mobile,
-    address: data.address,
-    parent_guardian_name: data.parent_guardian_name,
-    parent_guardian_contact: data.parent_guardian_contact,
-    enrollment_status: data.enrollment_status || 'active',
-    total_amount: data.total_amount || null,
-    profile_picture: profilePicturePath,
-  };
-
-  const { data: studentData, error } = await supabase
-    .from('students')
-    .insert(insertData)
-    .select(`
-      *,
-      classrooms:classroom_id (
-        id,
-        name,
-        section
-      )
-    `)
-    .single();
-
-  if (error) {
-    throw new Error(error.message);
-  }
-
-  return {
-    ...studentData,
-    school: studentData.school_id,
-    classroom: studentData.classroom_id,
-    classroom_name: studentData.classrooms ? `${studentData.classrooms.name} - ${studentData.classrooms.section}` : undefined,
-    profile_picture_url: studentData.profile_picture ? getPublicUrl('profiles', `students/${studentData.profile_picture}`) : null,
-  } as Student;
 };
 
 // Get Student Details
@@ -265,13 +354,37 @@ export const patchStudent = async (id: number, data: Partial<{
 
 // Delete Student
 export const deleteStudent = async (id: number): Promise<void> => {
-  const { error } = await supabase
-    .from('students')
-    .delete()
-    .eq('id', id);
+  console.log('[deleteStudent] Starting deletion for student ID:', id);
+  
+  try {
+    const { error, data } = await supabase
+      .from('students')
+      .delete()
+      .eq('id', id)
+      .select();
 
-  if (error) {
-    throw new Error(error.message);
+    if (error) {
+      console.error('[deleteStudent] Supabase delete error:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw new Error(error.message || 'Failed to delete student');
+    }
+
+    console.log('[deleteStudent] Student deleted successfully:', id);
+  } catch (error: any) {
+    console.error('[deleteStudent] Error in deleteStudent:', {
+      message: error?.message,
+      stack: error?.stack,
+      error: error
+    });
+    // Re-throw with more context if needed
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(error?.message || 'An unexpected error occurred while deleting the student');
   }
 };
 

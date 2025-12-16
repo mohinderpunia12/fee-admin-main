@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Loader2 } from "lucide-react";
 
 interface DeleteDialogProps {
   open?: boolean;
@@ -51,12 +52,21 @@ export function DeleteDialog({
           <AlertDialogAction
             onClick={(e: React.MouseEvent) => {
               e.preventDefault();
-              onConfirm();
+              if (!isLoading) {
+                onConfirm();
+              }
             }}
             disabled={isLoading}
-            className="bg-red-600 hover:bg-red-700"
+            className="bg-red-600 hover:bg-red-700 disabled:opacity-50"
           >
-            {isLoading ? "Deleting..." : "Delete"}
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Deleting...
+              </>
+            ) : (
+              "Delete"
+            )}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
